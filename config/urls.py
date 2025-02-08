@@ -24,6 +24,7 @@ urlpatterns = [
     path('orders/', include('orders.urls')),
     path('notifications/', include('notifications.urls')),
 ]
+
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework.permissions import AllowAny
