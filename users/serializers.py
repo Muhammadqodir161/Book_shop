@@ -1,37 +1,46 @@
 from rest_framework import serializers
-from django.contrib.auth.password_validation import validate_password
-from .models import CustomUser
+from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
+    """
+    Foydalanuvchi ma'lumotlarini qaytarish uchun serializer.
+    """
     class Meta:
-        model = CustomUser
-        fields = ('id', 'username', 'email', 'is_email_verified')
+        model = User
+        fields = ['id', 'email', 'username', 'first_name', 'last_name', 'is_verified']
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    """
+    Ro'yxatdan o'tish uchun serializer.
+    """
+    password = serializers.CharField(write_only=True, min_length=6)
 
     class Meta:
-        model = CustomUser
-        fields = ('username', 'email', 'password')
+        model = User
+        fields = ['email', 'username', 'password']
 
     def create(self, validated_data):
-        user = CustomUser.objects.create(
-            username=validated_data['username'],
-            email=validated_data['email']
-        )
-        user.set_password(validated_data['password'])
-        user.save()
-        return user
+        """
+        Yangi foydalanuvchini yaratish.
+        """
+        return User.objects.create_user(**validated_data)
 
-class UserProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CustomUser
-        fields = ['username', 'first_name', 'last_name', 'email']
+class LoginSerializer(TokenObtainPairSerializer):
+    """
+    JWT token olish uchun serializer.
+    """
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['email'] = user.email
+        return token
 
-class PasswordResetSerializer(serializers.Serializer):
+class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
-class PasswordResetConfirmSerializer(serializers.Serializer):
-    uid = serializers.CharField()
+class PasswordResetSerializer(serializers.Serializer):
     token = serializers.CharField()
-    password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True, min_length=6)

@@ -1,15 +1,12 @@
 from django.db import models
-from django.contrib.auth import get_user_model
+from django.conf import settings
 from books.models import Book
 
-User = get_user_model()
-
 class Order(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    book = models.ForeignKey(Book, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField()
-    ordered_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="orders")
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="orders")
+    quantity = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Order {self.id} by {self.user.username}"
-
+        return f"{self.user.username} - {self.book.title} ({self.quantity})"

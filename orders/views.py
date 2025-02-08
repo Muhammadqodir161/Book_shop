@@ -1,32 +1,34 @@
-from rest_framework import generics, permissions, viewsets, filters
-from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from .models import Order
 from .serializers import OrderSerializer
-from notifications.models import Notification
 
-class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return Order.objects.filter(user=self.request.user)
+class CustomPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 class OrderListCreateView(generics.ListCreateAPIView):
+    """
+    Foydalanuvchining barcha buyurtmalarini ko‘rish va yangi buyurtma yaratish uchun API.
+    """
     serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        order = serializer.save(user=self.request.user)
-        Notification.objects.create(
-            user=self.request.user,
-            message=f"Buyurtma #{order.id} muvaffaqiyatli yaratildi."
-        )
+        serializer.save(user=self.request.user)
 
-class OrderViewSet(viewsets.ModelViewSet):
-    queryset = Order.objects.all()
+class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Buyurtma tafsilotlari, yangilash va o‘chirish uchun API.
+    """
     serializer_class = OrderSerializer
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    search_fields = ['user__email', 'status'] 
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user)
